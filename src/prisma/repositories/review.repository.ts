@@ -128,7 +128,7 @@ function toReviewWithLikes<
       _count: {
         likedUsers: _count?.likedUsers ?? 0,
       },
-    } as T extends null ? ReviewWithLikes | null : ReviewWithLikes;
+    } as unknown as T extends null ? ReviewWithLikes | null : ReviewWithLikes;
 }
 
 @Injectable()

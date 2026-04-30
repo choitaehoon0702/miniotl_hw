@@ -95,3 +95,28 @@ export function toCourseWithLecturesDTO(
     lectures: course.lectures.map(toLectureWithProfessorResponseDTO),
   };
 }
+
+export class CourseFindQueryDTO {
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? value.split(',').map((s) => parseInt(s, 10))
+      : value,
+  )
+  @IsInt({ each: true })
+  readonly departments?: number[];
+
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? value.split(',').map((s) => parseInt(s, 10))
+      : value,
+  )
+  @IsInt({ each: true })
+  readonly codePrefixes?: number[];
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  readonly keyword?: string;
+}
