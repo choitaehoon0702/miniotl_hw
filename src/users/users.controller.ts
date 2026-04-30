@@ -57,5 +57,30 @@ export class UsersController {
   //       @JWTUser() 데코레이터로 JWT payload를 파라미터로 받을 수 있습니다.
   // ===========================================================================
 
-  // TODO: 여기에 3개의 라우트 핸들러를 구현하세요.
-}
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  async getProfile(@JWTUser() jwt: JWTPayload): Promise<UserProfileDTO> {
+    const user = await this.usersService.getUserWithDeptById(jwt.id);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return toUserProfileDTO(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('reviews')
+  async getMyReviews(@JWTUser() jwt: JWTPayload) {
+    const reviews = await this.reviewsService.getReviewsOfUser(jwt.id);
+
+    return reviews.map(toReviewWithLikesDTO(jwt.id));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('reviews/likes')
+  async getMyLikedReviews(@JWTUser() jwt: JWTPayload) {
+    const reviews = await this.reviewsService.getReviewsLikedByUser(jwt.id);
+
+    return reviews.map(toReviewWithLikesDTO(jwt.id));
+  }}
