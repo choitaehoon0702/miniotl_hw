@@ -45,17 +45,18 @@ export type LectureWithProfessorResponseDTO = {
 export function toLectureWithProfessorResponseDTO(
   course: LectureWithProfessorClassTimes,
 ): LectureWithProfessorResponseDTO {
-  // TODO: 강의 + 교수 + 수업시간 정보를 DTO로 변환하세요.
+  const reviewCount = course.reviewCount;
+
   return {
     id: course.id,
     courseId: course.courseId,
     year: course.year,
     season: course.season,
-    professor: {} as any,  // TODO: toSimpleProfessorResponseDTO
-    grade: 0,              // TODO: 평균 계산
-    load: 0,               // TODO
-    speech: 0,             // TODO
-    classTimes: [],        // TODO: map(toClassTimeResponseDTO)
+    professor: toSimpleProfessorResponseDTO(course.professor),
+    grade: reviewCount !== 0 ? course.sumGrade / reviewCount : 0,
+    load: reviewCount !== 0 ? course.sumLoad / reviewCount : 0,
+    speech: reviewCount !== 0 ? course.sumSpeech / reviewCount : 0,
+    classTimes: course.classTimes.map(toClassTimeResponseDTO),
   };
 }
 
@@ -69,15 +70,18 @@ export type TimetableLectureItemDTO = {
   classTimes: ClassTimeResponseDTO[];
 };
 
-export function toTimetableLectureItemDTO(lecture: LectureWithCourseProfessorClasstime): TimetableLectureItemDTO {
-  // TODO: 시간표용 강의 아이템 DTO로 변환하세요.
+export function toTimetableLectureItemDTO(
+  lecture: LectureWithCourseProfessorClasstime,
+): TimetableLectureItemDTO {
+  const reviewCount = lecture.reviewCount;
+
   return {
     id: lecture.id,
-    course: {} as any,     // TODO: courseWithDeptToCourseDTO
-    professor: {} as any,  // TODO: toSimpleProfessorResponseDTO
-    grade: 0,              // TODO: 평균 계산
-    load: 0,               // TODO
-    speech: 0,             // TODO
-    classTimes: [],        // TODO: map(toClassTimeResponseDTO)
+    course: courseWithDeptToCourseDTO(lecture.course),
+    professor: toSimpleProfessorResponseDTO(lecture.professor),
+    grade: reviewCount !== 0 ? lecture.sumGrade / reviewCount : 0,
+    load: reviewCount !== 0 ? lecture.sumLoad / reviewCount : 0,
+    speech: reviewCount !== 0 ? lecture.sumSpeech / reviewCount : 0,
+    classTimes: lecture.classTimes.map(toClassTimeResponseDTO),
   };
 }
