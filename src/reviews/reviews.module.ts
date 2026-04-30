@@ -34,6 +34,12 @@ import { LecturesModule } from 'src/lectures/lectures.module';
 // 힌트: forwardRef는 '@nestjs/common'에서 import할 수 있습니다.
 // =============================================================================
 @Module({
-  // TODO: 여기에 providers, imports, exports, controllers를 설정하세요.
-})
+  providers: [ReviewsService, ReportsService],
+  imports: [
+    PrismaModule,
+    forwardRef(() => CoursesModule),
+    LecturesModule,
+  ],
+  exports: [ReviewsService],
+  controllers: [ReviewsController],})
 export class ReviewsModule { }
