@@ -27,13 +27,38 @@ export class LectureRepository {
   //     힌트: Prisma의 { increment: value } 사용법을 익혀두세요.
   // ===========================================================================
 
-  async getLectureWithClasstimesById(id: number): Promise<LecturewithClassTimes | null> {
-    // TODO: Prisma로 강의를 classTimes include하여 조회하세요.
-    return null;
+  async getLectureWithClasstimesById(
+    id: number,
+  ): Promise<LecturewithClassTimes | null> {
+    return this.prisma.lecture.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        classTimes: true,
+      },
+    });
   }
 
   async updateLectureStats(data: LectureStatUpdateInput) {
-    // TODO: Prisma의 increment를 사용하여 통계를 업데이트하세요.
-    return {} as any;
+    return this.prisma.lecture.update({
+      where: {
+        id: data.lectureId,
+      },
+      data: {
+        sumGrade: {
+          increment: data.gradeChange,
+        },
+        sumLoad: {
+          increment: data.loadChange,
+        },
+        sumSpeech: {
+          increment: data.speechChange,
+        },
+        reviewCount: {
+          increment: data.reviewCountChange,
+        },
+      },
+    });
   }
 }
