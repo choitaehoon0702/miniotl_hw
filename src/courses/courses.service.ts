@@ -46,24 +46,36 @@ export class CoursesService {
   // ===========================================================================
 
   async getCourseWithLectures(id: number) {
-    // TODO: 과목을 강의 포함 조회하여 반환하세요.
-    return null;
+    return this.courseRepository.getCourseWithLectures(id);
   }
 
   async findFiltered(filter: CourseFindFilter, userId?: number) {
-    // TODO: 필터 조건으로 과목을 검색하여 반환하세요.
-    return [];
+    return this.courseRepository.findFiltered(filter, userId);
   }
 
   async updateCourseStats(data: CourseStatUpdateInput) {
-    // TODO: 과목의 통계 정보를 업데이트하세요.
+    return this.courseRepository.updateCourseStats(data);
   }
 
   async updateCourseLastReviewId(courseId: number) {
-    // TODO: 과목의 마지막 리뷰 ID를 업데이트하세요.
+    return this.courseRepository.updateLastReviewId(courseId);
   }
 
   async userSawReviewOnCourse(courseId: number, userId: number) {
-    // TODO: 사용자가 과목의 리뷰를 확인했음을 기록하세요.
+    const course = await this.courseRepository.getCoursebyId(courseId);
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    if (course.lastReviewId === null) {
+      return;
+    }
+
+    return this.userLastSeenReviewOnCourseRepository.sawReviewOnCourse({
+      courseId,
+      userId,
+      lastSeenReviewId: course.lastReviewId,
+    });
   }
 }
