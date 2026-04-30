@@ -49,12 +49,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly configService: ConfigService,
     private readonly usersService: UsersService,
   ) {
-    // TODO: super()를 호출하여 JWT 추출/검증 설정을 전달하세요.
-    super({});
+    super({
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request) => request?.cookies?.jwt,
+      ]),
+      ignoreExpiration: false,
+      secretOrKey: configService.get('JWT_ACCESS_TOKEN_SECRET'),
+    });
   }
 
   async validate(payload: JWTPayload) {
-    // TODO: 검증된 payload를 반환하세요.
-    return null;
+    return payload;
   }
 }
