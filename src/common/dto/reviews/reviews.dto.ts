@@ -81,24 +81,26 @@ export type ReviewDTO = {
 export const toReviewDTO =
   (currentUserId?: number) =>
     (review: Review): ReviewDTO => ({
-      // TODO: Review에서 필요한 필드를 추출하고 mine 계산하세요.
       id: review.id,
       lectureId: review.lectureId,
       content: review.content,
       grade: review.grade,
       load: review.load,
       speech: review.speech,
-      mine: false,           // TODO: currentUserId와 비교
+      mine: review.userId === currentUserId,
     });
 
-export type ReviewWithLikesDTO = ReviewDTO & { likes: number, myLike: boolean };
+export type ReviewWithLikesDTO = ReviewDTO & {
+  likes: number;
+  myLike: boolean;
+};
 
 export const toReviewWithLikesDTO = (currentUserId?: number) => {
   const toReview = toReviewDTO(currentUserId);
+
   return (review: ReviewWithLikes): ReviewWithLikesDTO => ({
-    // TODO: toReview를 스프레드하고 likes와 myLike를 추가하세요.
     ...toReview(review),
-    likes: 0,              // TODO: review._count.likedUsers
-    myLike: false,         // TODO: review.liked
+    likes: review._count.likedUsers,
+    myLike: review.liked,
   });
 };
