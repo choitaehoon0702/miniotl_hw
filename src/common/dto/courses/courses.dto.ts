@@ -50,58 +50,48 @@ export type CourseResponseDTO = {
 // ===========================================================================
 
 export function courseWithDeptToCourseDTO(course: CourseWithDept): CourseResponseDTO {
-  // TODO: CourseWithDept를 CourseResponseDTO로 변환하세요.
-  // courseCode = deptCode + courseNumCode, grade/load/speech = sum / reviewCount (0으로 나누기 방지)
+  const reviewCount = course.reviewCount;
+
   return {
     id: course.id,
     nameKo: course.nameKo,
     nameEn: course.nameEn,
-    courseCode: '',        // TODO
+    courseCode: `${course.department.deptCode}${course.courseNumCode}`,
     courseNumCode: course.courseNumCode,
     lectureTime: course.lectureTime,
     labTime: course.labTime,
     credit: course.credit,
-    department: {} as any, // TODO
-    grade: 0,              // TODO
-    load: 0,               // TODO
-    speech: 0,             // TODO
+    department: toDepartmentDTO(course.department),
+    grade: reviewCount !== 0 ? course.sumGrade / reviewCount : 0,
+    load: reviewCount !== 0 ? course.sumLoad / reviewCount : 0,
+    speech: reviewCount !== 0 ? course.sumSpeech / reviewCount : 0,
   };
 }
 
-export type CourseWithUnseenReviewResponseDTO = CourseResponseDTO & { unseenReview: boolean };
+export type CourseWithUnseenReviewResponseDTO = CourseResponseDTO & {
+  unseenReview: boolean;
+};
+
 export function toCourseWithUnseenReviewDTO(
   course: CourseWithDeptAndLastSeenReview,
 ): CourseWithUnseenReviewResponseDTO {
-  // TODO: 안 읽은 리뷰가 있는지 계산하여 반환하세요.
   return {
     ...courseWithDeptToCourseDTO(course),
-    unseenReview: false,   // TODO
+    unseenReview:
+      (course.lastReviewId ?? 0) >
+      (course.userLastSeenReviewOnCourse?.[0]?.lastSeenReviewId ?? 0),
   };
 }
 
-export type CourseWithLecturesResponseDTO = CourseResponseDTO & { lectures: LectureWithProfessorResponseDTO[] };
+export type CourseWithLecturesResponseDTO = CourseResponseDTO & {
+  lectures: LectureWithProfessorResponseDTO[];
+};
 
-export function toCourseWithLecturesDTO(course: CourseWithIncludes): CourseWithLecturesResponseDTO {
-  // TODO: 강의 목록을 포함하여 변환하세요.
+export function toCourseWithLecturesDTO(
+  course: CourseWithIncludes,
+): CourseWithLecturesResponseDTO {
   return {
     ...courseWithDeptToCourseDTO(course),
-    lectures: [],          // TODO
+    lectures: course.lectures.map(toLectureWithProfessorResponseDTO),
   };
-}
-
-export class CourseFindQueryDTO {
-  @IsOptional()
-  @Transform(({ value }) => value.split(',').map((s) => parseInt(s)))
-  @IsInt({ each: true })
-  readonly departments?: number[];
-
-  @IsOptional()
-  @Transform(({ value }) => value.split(',').map((s) => parseInt(s)))
-  @IsInt({ each: true })
-  readonly codePrefixes?: number[];
-
-  @IsOptional()
-  @IsString()
-  @Length(1, 100)
-  readonly keyword?: string;
 }
