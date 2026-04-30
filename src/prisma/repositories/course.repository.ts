@@ -81,8 +81,45 @@ export class CourseRepository {
     filter: CourseFindFilter,
     userId?: number,
   ): Promise<CourseWithDept[] | CourseWithDeptAndLastSeenReview[]> {
-    // TODO: 여기에 복합 필터 쿼리를 구현하세요.
-    return [];
+    const codePrefixConditions = filter.codePrefixes?.map((prefix) => ({
+      courseNumCode: {
+        gte: prefix * 100,
+        lt: (prefix + 1) * 100,
+      },
+    }));
+
+    return await this.prisma.course.findMany({
+      where: {
+        AND: [
+          filter.departments
+            ? { departmentId: { in: filter.departments } }
+            : {},
+
+          codePrefixConditions && codePrefixConditions.length > 0
+            ? { OR: codePrefixConditions }
+            : {},
+
+          filter.keyword
+            ? {
+                OR: [
+                  { nameKo: { contains: filter.keyword } },
+                  { nameEn: { contains: filter.keyword } },
+                ],
+              }
+            : {},
+        ],
+      },
+      include: {
+        department: true,
+        userLastSeenReviewOnCourse: userId
+          ? {
+              where: {
+                userId,
+              },
+            }
+          : false,
+      },
+    });
   }
 
   async updateCourseStats(data: CourseStatUpdateInput) {
