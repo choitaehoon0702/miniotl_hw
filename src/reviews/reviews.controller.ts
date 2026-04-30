@@ -51,5 +51,46 @@ export class ReviewsController {
   // 힌트: 커링 함수는 toReviewWithLikesDTO(user.id)(result) 형태로 호출합니다.
   // ===========================================================================
 
-  // TODO: 여기에 likeReview, unlikeReview, createReport 엔드포인트를 구현하세요.
-}
+  @UseGuards(JwtAuthGuard)
+  @Post(':reviewId/likes')
+  async likeReview(
+    @JWTUser() user: JWTPayload,
+    @Param('reviewId') reviewId: string,
+  ) {
+    const result = await this.reviewsService.likeReview(
+      Number(reviewId),
+      user.id,
+    );
+
+    return toReviewWithLikesDTO(user.id)(result);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':reviewId/likes')
+  async unlikeReview(
+    @JWTUser() user: JWTPayload,
+    @Param('reviewId') reviewId: string,
+  ) {
+    const result = await this.reviewsService.unlikeReview(
+      Number(reviewId),
+      user.id,
+    );
+
+    return toReviewWithLikesDTO(user.id)(result);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':reviewId/report')
+  async createReport(
+    @JWTUser() user: JWTPayload,
+    @Param('reviewId') reviewId: string,
+    @Body() data: ReportCreateBodyDTO,
+  ) {
+    const report = await this.reportService.createReport({
+      userId: user.id,
+      reviewId: Number(reviewId),
+      ...data,
+    });
+
+    return toReportDTO(report);
+  }}
