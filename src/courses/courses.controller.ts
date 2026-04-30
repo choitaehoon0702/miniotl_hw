@@ -131,7 +131,152 @@ export class CoursesController {
   //       커링 함수는 toReviewDTO(userId)(review) 형태로 호출합니다.
   // ===========================================================================
 
-  // TODO: 여기에 9개의 엔드포인트를 구현하세요.
+  @UseGuards(JwtAuthGuard)
+  @Public()
+  @Get()
+  async findCourses(
+    @Query() filter: CourseFindQueryDTO,
+    @JWTUser() user?: JWTPayload,
+  ) {
+    const courses = await this.coursesService.findFiltered(filter, user?.id);
+
+    if (isCourseWithDeptAndLastSeenReviewArray(courses)) {
+      return courses.map(toCourseWithUnseenReviewDTO);
+    }
+
+    return courses.map(courseWithDeptToCourseDTO);
+  }
+
+  @Get(':id')
+  async getCourse(@Param('id') id: string) {
+    const course = await this.coursesService.getCourseWithLectures(Number(id));
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    return toCourseWithLecturesDTO(course);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Public()
+  @Get(':id/reviews')
+  async getCourseReviews(
+    @Param('id') id: string,
+    @JWTUser() user?: JWTPayload,
+  ) {
+    const reviews = await this.reviewsService.getReviewsWithLikesByCourseId(
+      Number(id),
+      user?.id,
+    );
+
+    return reviews.map(toReviewWithLikesDTO(user?.id));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Public()
+  @Get('lectures/:lectureId/reviews')
+  async getLectureReviews(
+    @Param('lectureId') lectureId: string,
+    @JWTUser() user?: JWTPayload,
+  ) {
+    const reviews = await this.reviewsService.getReviewsWithLikesByLectureId(
+      Number(lectureId),
+      user?.id,
+    );
+
+    return reviews.map(toReviewWithLikesDTO(user?.id));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(201)
+  @Post('lectures/:lectureId/reviews')
+  async createReview(
+    @JWTUser() user: JWTPayload,
+    @Param('lectureId') lectureId: string,
+    @Body() review: ReviewCreateBodyDTO,
+  ) {
+    const dto: CreateReviewDTO = {
+      ...review,
+      lectureId: Number(lectureId),
+      userId: user.id,
+    };
+
+    const created = await this.reviewsService.createReview(dto);
+
+    return toReviewDTO(user.id)(created);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @Patch('lectures/:lectureId/reviews/:id')
+  async updateReview(
+    @JWTUser() user: JWTPayload,
+    @Param('lectureId') lectureId: string,
+    @Param('id') id: string,
+    @Body() review: ReviewUpdateBodyDTO,
+  ) {
+    const dto: UpdateReviewDTO = {
+      ...review,
+      id: Number(id),
+      lectureId: Number(lectureId),
+      userId: user.id,
+    };
+
+    const updated = await this.reviewsService.updateReviewByUser(dto);
+
+    return toReviewDTO(user.id)(updated);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Public()
+  @Get('lectures/reviews/:reviewId')
+  async getReview(
+    @Param('reviewId') reviewId: string,
+    @JWTUser() user?: JWTPayload,
+  ) {
+    const review = await this.reviewsService.getReviewWithLikesById(
+      Number(reviewId),
+      user?.id,
+    );
+
+    if (!review || review.isDeleted) {
+      throw new NotFoundException('Review not found');
+    }
+
+    return toReviewWithLikesDTO(user?.id)(review);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @HttpCode(204)
+  @Delete(':id/lectures/:lectureId/reviews/:reviewId')
+  async deleteReviewByAdmin(@Param('reviewId') reviewId: string) {
+    await this.reviewsService.deleteReviewByAdmin(Number(reviewId));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/reviews/seen')
+  async markReviewSeen(
+    @Param('id') id: string,
+    @JWTUser() user: JWTPayload,
+  ) {
+    const courseId = Number(id);
+
+    const result = await this.coursesService.userSawReviewOnCourse(
+      courseId,
+      user.id,
+    );
+
+    if (!result) {
+      return toUserLastSeenReviewOnCourseDTO({
+        userId: user.id,
+        courseId,
+        lastSeenReviewId: null,
+      });
+    }
+
+    return toUserLastSeenReviewOnCourseDTO(result);
+  }
 }
 
 function isCourseWithDeptAndLastSeenReviewArray(
