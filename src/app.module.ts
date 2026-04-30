@@ -29,9 +29,19 @@ import { TimetablesModule } from './timetables/timetables.module';
 // ===========================================================================
 
 @Module({
-  // TODO: imports, controllers, providers를 설정하세요.
-  imports: [],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    UsersModule,
+    AuthModule,
+    CoursesModule,
+    ReviewsModule,
+    LecturesModule,
+    SemestersModule,
+    TimetablesModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
