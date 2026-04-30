@@ -44,39 +44,104 @@ import { TimetableCreateInput, TimetableWithFullLectures, TimetableWithLectureTi
 
 // TODO: TIMETABLE_WITH_FULL_LECTURES_INCLUDE 상수를 정의하세요.
 // 힌트: lectures의 course(+department), professor, classTimes를 모두 include합니다.
-const TIMETABLE_WITH_FULL_LECTURES_INCLUDE = {} as const;
+const TIMETABLE_WITH_FULL_LECTURES_INCLUDE = {
+  lectures: {
+    include: {
+      course: {
+        include: {
+          department: true,
+        },
+      },
+      professor: true,
+      classTimes: true,
+    },
+  },
+} as const;
 
 @Injectable()
 export class TimetableRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(data: TimetableCreateInput) {
-    // TODO: 시간표를 생성하세요.
-    return {} as any;
+    return this.prisma.timetable.create({
+      data,
+    });
   }
 
-  async getTimetableWithLectureTimesById(id: number): Promise<TimetableWithLectureTimes | null> {
-    // TODO: classTimes를 포함하여 시간표를 조회하세요.
-    return null;
+  async getTimetableWithLectureTimesById(
+    id: number,
+  ): Promise<TimetableWithLectureTimes | null> {
+    return this.prisma.timetable.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        lectures: {
+          include: {
+            classTimes: true,
+          },
+        },
+      },
+    });
   }
 
-  async getTimetableWithLecturesById(id: number): Promise<TimetableWithFullLectures | null> {
-    // TODO: 전체 강의 정보를 포함하여 시간표를 조회하세요.
-    return null;
+  async getTimetableWithLecturesById(
+    id: number,
+  ): Promise<TimetableWithFullLectures | null> {
+    return this.prisma.timetable.findUnique({
+      where: {
+        id,
+      },
+      include: TIMETABLE_WITH_FULL_LECTURES_INCLUDE,
+    });
   }
 
-  async getUserTimetablesWithLectures(userId: number): Promise<TimetableWithFullLectures[]> {
-    // TODO: 사용자의 모든 시간표를 조회하세요.
-    return [];
+  async getUserTimetablesWithLectures(
+    userId: number,
+  ): Promise<TimetableWithFullLectures[]> {
+    return this.prisma.timetable.findMany({
+      where: {
+        userId,
+      },
+      include: TIMETABLE_WITH_FULL_LECTURES_INCLUDE,
+    });
   }
 
-  async addLectureToTimetable(timetableId: number, lectureId: number): Promise<TimetableWithFullLectures> {
-    // TODO: M:N 관계에서 connect로 강의를 시간표에 추가하세요.
-    return {} as any;
+  async addLectureToTimetable(
+    timetableId: number,
+    lectureId: number,
+  ): Promise<TimetableWithFullLectures> {
+    return this.prisma.timetable.update({
+      where: {
+        id: timetableId,
+      },
+      data: {
+        lectures: {
+          connect: {
+            id: lectureId,
+          },
+        },
+      },
+      include: TIMETABLE_WITH_FULL_LECTURES_INCLUDE,
+    });
   }
 
-  async removeLectureFromTimetable(timetableId: number, lectureId: number): Promise<TimetableWithFullLectures> {
-    // TODO: M:N 관계에서 disconnect로 강의를 시간표에서 제거하세요.
-    return {} as any;
+  async removeLectureFromTimetable(
+    timetableId: number,
+    lectureId: number,
+  ): Promise<TimetableWithFullLectures> {
+    return this.prisma.timetable.update({
+      where: {
+        id: timetableId,
+      },
+      data: {
+        lectures: {
+          disconnect: {
+            id: lectureId,
+          },
+        },
+      },
+      include: TIMETABLE_WITH_FULL_LECTURES_INCLUDE,
+    });
   }
 }
