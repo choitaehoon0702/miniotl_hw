@@ -50,12 +50,20 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
   ) {
-    // TODO: super()를 호출하여 Refresh 토큰 추출/검증 설정을 전달하세요.
-    super({});
+    super({
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request) => request?.cookies?.refresh,
+      ]),
+      ignoreExpiration: false,
+      secretOrKey: configService.get('JWT_REFRESH_TOKEN_SECRET'),
+      passReqToCallback: true,
+    });
   }
 
   async validate(request: Request, payload: JWTPayload) {
-    // TODO: Refresh 토큰을 검증하고 새 Access 토큰을 생성하여 반환하세요.
-    return null;
+    return this.authService.validateRefreshAndGenerateAccessToken(
+      payload.id,
+      request.cookies.refresh,
+    );
   }
 }
