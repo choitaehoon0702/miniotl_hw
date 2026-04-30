@@ -117,57 +117,207 @@ export class ReviewsService {
   // ===========================================================================
 
   async createReview(data: CreateReviewDTO) {
-    // TODO: 리뷰 생성 + 과목/강의 통계 업데이트 로직을 구현하세요.
-    return {} as any;
+    const exists = await this.reviewRepository.checkUserReviewExistsForLecture(
+      data.userId,
+      data.lectureId,
+    );
+
+    if (exists) {
+      throw new ConflictException("User's review already exists for this lecture");
+    }
+
+    const lecture = await this.lecturesService.getLectureWithClasstimesById(
+      data.lectureId,
+    );
+
+    const newReview = await this.reviewRepository.createReview(data);
+
+    try {
+      const changes = {
+        gradeChange: data.grade,
+        loadChange: data.load,
+        speechChange: data.speech,
+        reviewCountChange: 1,
+      };
+
+      await Promise.all([
+        this.coursesService.updateCourseStats({
+          ...changes,
+          courseId: lecture.courseId,
+        }),
+        this.coursesService.updateCourseLastReviewId(lecture.courseId),
+        this.lecturesService.updateLectureStats({
+          ...changes,
+          lectureId: data.lectureId,
+        }),
+      ]);
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException();
+    }
+
+    return newReview;
   }
 
   async updateReviewByUser(data: UpdateReviewDTO) {
-    // TODO: 리뷰 수정 + 권한 검사 + 통계 업데이트 로직을 구현하세요.
-    return {} as any;
+    const { id, userId, lectureId, ...rest } = data;
+
+    const review = await this.getReviewWithId(id);
+
+    if (review.userId !== userId) {
+      throw new ForbiddenException('Review can only be updated by its author');
+    }
+
+    if (review.lectureId !== lectureId) {
+      throw new NotFoundException('Review not found');
+    }
+
+    const lecture = await this.lecturesService.getLectureWithClasstimesById(
+      review.lectureId,
+    );
+
+    const newReview = await this.reviewRepository.updateReview(id, rest);
+
+    const changes = {
+      gradeChange: data.grade - review.grade,
+      loadChange: data.load - review.load,
+      speechChange: data.speech - review.speech,
+      reviewCountChange: 0,
+    };
+
+    const hasChanges =
+      changes.gradeChange !== 0 ||
+      changes.loadChange !== 0 ||
+      changes.speechChange !== 0;
+
+    if (hasChanges) {
+      try {
+        await Promise.all([
+          this.coursesService.updateCourseStats({
+            ...changes,
+            courseId: lecture.courseId,
+          }),
+          this.lecturesService.updateLectureStats({
+            ...changes,
+            lectureId: review.lectureId,
+          }),
+        ]);
+      } catch (error) {
+        console.error(error);
+        throw new InternalServerErrorException();
+      }
+    }
+
+    return newReview;
   }
 
   async getReviewWithId(id: number) {
-    // TODO: ID로 리뷰를 조회하세요. 없거나 삭제되었으면 NotFoundException을 throw하세요.
-    throw new NotFoundException('Review not found');
+    const review = await this.reviewRepository.getReviewById(id);
+
+    if (!review || review.isDeleted) {
+      throw new NotFoundException('Review not found');
+    }
+
+    return review;
   }
 
   async getReviewWithLikesById(id: number, userid: number | undefined) {
-    // TODO: 좋아요 정보 포함 리뷰를 조회하세요.
-    return null;
+    return this.reviewRepository.getReviewWithLikesById(id, userid);
   }
 
-  async getReviewsWithLikesByLectureId(lectureId: number, userId: number | undefined) {
-    // TODO: 강의별 리뷰 목록을 조회하세요.
-    return [];
+  async getReviewsWithLikesByLectureId(
+    lectureId: number,
+    userId: number | undefined,
+  ) {
+    return this.reviewRepository.getReviewsWithLikesByLectureId(
+      lectureId,
+      userId,
+    );
   }
 
-  async getReviewsWithLikesByCourseId(courseId: number, userId: number | undefined) {
-    // TODO: 과목별 리뷰 목록을 조회하세요.
-    return [];
+  async getReviewsWithLikesByCourseId(
+    courseId: number,
+    userId: number | undefined,
+  ) {
+    return this.reviewRepository.getReviewsWithLikesByCourseId(
+      courseId,
+      userId,
+    );
   }
 
   async likeReview(reviewId: number, userId: number) {
-    // TODO: 리뷰 좋아요 로직을 구현하세요. 본인 리뷰는 좋아요 불가.
-    return {} as any;
+    const review = await this.getReviewWithId(reviewId);
+
+    if (review.userId === userId) {
+      throw new ForbiddenException('User cannot like own review');
+    }
+
+    return this.reviewRepository.likeReview(reviewId, userId);
   }
 
   async unlikeReview(reviewId: number, userId: number) {
-    // TODO: 리뷰 좋아요 취소 로직을 구현하세요.
-    return {} as any;
+    await this.getReviewWithId(reviewId);
+
+    return this.reviewRepository.unlikeReview(reviewId, userId);
   }
 
   async deleteReviewByAdmin(id: number) {
-    // TODO: 관리자 리뷰 삭제 (신고된 리뷰만 삭제 가능) 로직을 구현하세요.
-    return {} as any;
+    const review = await this.reviewRepository.getReviewById(id);
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    if (review.isDeleted) {
+      throw new ConflictException('Review already deleted');
+    }
+
+    const reportExists = await this.reportService.checkReportExistsForReview(id);
+
+    if (!reportExists) {
+      throw new ForbiddenException(
+        'Review can only be deleted after being reported',
+      );
+    }
+
+    const lecture = await this.lecturesService.getLectureWithClasstimesById(
+      review.lectureId,
+    );
+
+    const deletedReview = await this.reviewRepository.deleteReview(id);
+
+    try {
+      const changes = {
+        gradeChange: -review.grade,
+        loadChange: -review.load,
+        speechChange: -review.speech,
+        reviewCountChange: -1,
+      };
+
+      await Promise.all([
+        this.coursesService.updateCourseStats({
+          ...changes,
+          courseId: lecture.courseId,
+        }),
+        this.coursesService.updateCourseLastReviewId(lecture.courseId),
+        this.lecturesService.updateLectureStats({
+          ...changes,
+          lectureId: review.lectureId,
+        }),
+      ]);
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException();
+    }
+
+    return deletedReview;
   }
 
   async getReviewsOfUser(userId: number) {
-    // TODO: 사용자가 작성한 리뷰 목록을 조회하세요.
-    return [];
+    return this.reviewRepository.getReviewsWithLikesByUserId(userId);
   }
 
   async getReviewsLikedByUser(userId: number) {
-    // TODO: 사용자가 좋아요한 리뷰 목록을 조회하세요.
-    return [];
+    return this.reviewRepository.getReviewsWithLikesLikedByUser(userId);
   }
 }
