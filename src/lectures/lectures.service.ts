@@ -26,11 +26,16 @@ export class LecturesService {
   // ===========================================================================
 
   async getLectureWithClasstimesById(id: number) {
-    // TODO: 강의를 수업시간 포함 조회하세요. 없으면 NotFoundException을 throw하세요.
-    throw new NotFoundException('Lecture not found');
+    const lecture = await this.lecturesRepository.getLectureWithClasstimesById(id);
+
+    if (!lecture) {
+      throw new NotFoundException('Lecture not found');
+    }
+
+    return lecture;
   }
 
   async updateLectureStats(data: LectureStatUpdateInput) {
-    // TODO: 강의의 통계 정보를 업데이트하세요.
+    return this.lecturesRepository.updateLectureStats(data);
   }
 }
