@@ -62,5 +62,108 @@ export class UserTimetablesController {
   //       ForbiddenException은 '@nestjs/common'에서 import합니다.
   // ===========================================================================
 
-  // TODO: 여기에 5개의 엔드포인트를 구현하세요.
-}
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async createTimetable(
+    @JWTUser() user: JWTPayload,
+    @Param('userId') userId: string,
+    @Body() body: CreateTimetableBodyDTO,
+  ) {
+    if (user.id !== Number(userId)) {
+      throw new ForbiddenException('You can only create your own timetables');
+    }
+
+    const timetable = await this.timetablesService.createTimetableForUser({
+      userId: user.id,
+      ...body,
+    });
+
+    return toTimetableWithLecturesDTO({
+      ...timetable,
+      lectures: [],
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getUserTimetables(
+    @JWTUser() user: JWTPayload,
+    @Param('userId') userId: string,
+  ) {
+    if (user.id !== Number(userId)) {
+      throw new ForbiddenException('You can only get your own timetables');
+    }
+
+    const timetables =
+      await this.timetablesService.getUserTimetablesWithLectures(user.id);
+
+    return timetables.map(toTimetableWithLecturesDTO);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':timetableId')
+  async getUserTimetable(
+    @JWTUser() user: JWTPayload,
+    @Param('userId') userId: string,
+    @Param('timetableId') timetableId: string,
+  ) {
+    if (user.id !== Number(userId)) {
+      throw new ForbiddenException('You can only get your own timetables');
+    }
+
+    const timetable =
+      await this.timetablesService.getUserTimetableWithLectureById(
+        user.id,
+        Number(timetableId),
+      );
+
+    return toTimetableWithLecturesDTO(timetable);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':timetableId/lectures/:lectureId')
+  async addLectureToTimetable(
+    @JWTUser() user: JWTPayload,
+    @Param('userId') userId: string,
+    @Param('timetableId') timetableId: string,
+    @Param('lectureId') lectureId: string,
+  ) {
+    if (user.id !== Number(userId)) {
+      throw new ForbiddenException(
+        'You can only add lectures to your own timetable',
+      );
+    }
+
+    const timetable =
+      await this.timetablesService.addLectureToTimetableForUser(
+        user.id,
+        Number(timetableId),
+        Number(lectureId),
+      );
+
+    return toTimetableWithLecturesDTO(timetable);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':timetableId/lectures/:lectureId')
+  async removeLectureFromTimetable(
+    @JWTUser() user: JWTPayload,
+    @Param('userId') userId: string,
+    @Param('timetableId') timetableId: string,
+    @Param('lectureId') lectureId: string,
+  ) {
+    if (user.id !== Number(userId)) {
+      throw new ForbiddenException(
+        'You can only remove lectures from your own timetable',
+      );
+    }
+
+    const timetable =
+      await this.timetablesService.removeLectureFromTimetableForUser(
+        user.id,
+        Number(timetableId),
+        Number(lectureId),
+      );
+
+    return toTimetableWithLecturesDTO(timetable);
+  }}
