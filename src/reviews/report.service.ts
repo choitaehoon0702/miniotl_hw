@@ -34,12 +34,16 @@ export class ReportsService {
   // ===========================================================================
 
   async createReport(data: ReportCreateDTO) {
-    // TODO: 리뷰 신고 로직을 구현하세요. 본인 리뷰는 신고 불가.
-    return {} as any;
+    const review = await this.reviewsService.getReviewWithId(data.reviewId);
+
+    if (review.userId === data.userId) {
+      throw new NotFoundException('User cannot report their own review');
+    }
+
+    return this.reportRepository.create(data);
   }
 
   async checkReportExistsForReview(reviewId: number) {
-    // TODO: 리뷰에 신고가 있는지 확인하세요.
-    return false;
+    return this.reportRepository.checkReportExistsForReview(reviewId);
   }
 }
