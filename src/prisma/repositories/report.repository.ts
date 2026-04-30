@@ -20,12 +20,22 @@ export class ReportRepository {
   // ===========================================================================
 
   async create(data: ReportCreateInput): Promise<Report> {
-    // TODO: Prisma로 신고를 생성하세요.
-    return {} as any;
+    return this.prisma.report.create({
+      data: {
+        userId: data.userId,
+        reviewId: data.reviewId,
+        content: data.content,
+      },
+    });
   }
 
   async checkReportExistsForReview(reviewId: number): Promise<boolean> {
-    // TODO: 리뷰에 신고가 있는지 확인하세요.
-    return false;
+    const report = await this.prisma.report.findFirst({
+      where: {
+        reviewId,
+      },
+    });
+
+    return !!report;
   }
 }
