@@ -37,32 +37,68 @@ export class UserRepository {
   // ===========================================================================
 
   async create(data: UserCreateDTO): Promise<User> {
-    // TODO: Prisma user.create로 사용자를 생성하세요. department는 connect로 연결.
-    return {} as any;
+    return this.prisma.user.create({
+      data: {
+        email: data.email,
+        encryptedPassword: data.encryptedPassword,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        isAdmin: data.isAdmin,
+        department: {
+          connect: {
+            id: data.departmentId,
+          },
+        },
+      },
+    });
   }
 
   async updateRefreshToken(userId: number, refreshToken: string): Promise<User> {
-    // TODO: Prisma user.update로 refreshToken을 업데이트하세요.
-    return {} as any;
+    return this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        refreshToken,
+      },
+    });
   }
 
   async getUserWithDeptById(id: number): Promise<UserWithDept | null> {
-    // TODO: Prisma user.findUnique로 department include하여 조회하세요.
-    return null;
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        department: true,
+      },
+    });
   }
 
   async getById(id: number): Promise<User | null> {
-    // TODO: Prisma user.findUnique로 ID로 조회하세요.
-    return null;
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
   }
 
   async getByEmail(email: string): Promise<User | null> {
-    // TODO: Prisma user.findUnique로 email로 조회하세요.
-    return null;
+    return this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
   }
 
   async setAdmin(id: number, isAdmin: boolean): Promise<User> {
-    // TODO: Prisma user.update로 isAdmin을 업데이트하세요.
-    return {} as any;
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        isAdmin,
+      },
+    });
   }
 }
