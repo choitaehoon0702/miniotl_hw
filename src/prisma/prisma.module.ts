@@ -32,8 +32,25 @@ import { UserLastSeenReviewOnCourseRepository } from './repositories/userLastSee
 // ===========================================================================
 
 @Module({
-  // TODO: providers와 exports 배열을 채우세요.
-  providers: [],
-  exports: [],
+  providers: [
+    PrismaService,
+    UserRepository,
+    CourseRepository,
+    LectureRepository,
+    ReviewRepository,
+    ReportRepository,
+    TimetableRepository,
+    UserLastSeenReviewOnCourseRepository,
+  ],
+  exports: [
+    PrismaService,
+    UserRepository,
+    CourseRepository,
+    LectureRepository,
+    ReviewRepository,
+    ReportRepository,
+    TimetableRepository,
+    UserLastSeenReviewOnCourseRepository,
+  ],
 })
-export class PrismaModule { }
+export class PrismaModule {}
