@@ -19,7 +19,10 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 //
 // 힌트: createParamDecorator((data: unknown, ctx: ExecutionContext) => { ... })
 // =============================================================================
-export const JWTUser = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
-  // TODO: 요청 객체에서 user 정보를 추출하여 반환하세요.
-  return null;
-});
+export const JWTUser = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+
+    return request.user;
+  },
+);
