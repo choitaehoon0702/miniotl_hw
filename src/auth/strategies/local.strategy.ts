@@ -38,12 +38,18 @@ type LocalAuthUser = User;
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
   constructor(private authService: AuthService) {
-    // TODO: super()를 호출하여 username 필드 설정을 전달하세요.
-    super({});
+    super({
+      usernameField: 'email',
+    });
   }
 
   async validate(email: string, password: string): Promise<LocalAuthUser> {
-    // TODO: 이메일/비밀번호로 사용자를 검증하고 결과를 반환하세요.
-    throw new UnauthorizedException('Invalid credentials');
+    const user = await this.authService.validateUser(email, password);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    return user;
   }
 }
